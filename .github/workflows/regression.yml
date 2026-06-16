@@ -1,11 +1,11 @@
-name: CI
+name: AutoTestKit Regression Pipeline
 
 on:
-  push:
   pull_request:
+    branches: [ main ]
 
 jobs:
-  build:
+  regression:
     runs-on: ubuntu-latest
 
     env:
@@ -17,15 +17,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
           java-version: '21'
+          distribution: 'temurin'
           cache: maven
 
-      - name: Test
-        run: mvn test -Dgroups=smoke
+      - name: Run Regression Suite
+        run: mvn test -Dgroups=regression
+
+      - name: Generate Allure Report
+        if: always()
+        run: mvn allure:report
 
       - name: Upload Surefire Reports
         if: always()
@@ -33,3 +37,10 @@ jobs:
         with:
           name: surefire-reports
           path: target/surefire-reports
+
+      - name: Upload Allure Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: target/site/allure-maven-plugin
